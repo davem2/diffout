@@ -30,6 +30,7 @@ import shutil
 import shlex
 import subprocess
 import time
+import colorama
 
 
 VERSION="0.1.0" # MAJOR.MINOR.PATCH | http://semver.org
@@ -125,6 +126,8 @@ def main():
 	testDirectoryPath = "~/pp/tools/repo/diffout/"
 	args = docopt(__doc__, version="diffout v{}".format(VERSION))
 
+	colorama.init()
+
 	# Configure logging
 	logLevel = logging.INFO #default
 	if args['--verbose']:
@@ -152,12 +155,17 @@ def main():
 	time.sleep(2)
 
 	# Run command on each input file
+	commandCount = 0
+	commandErrorCount = 0
 	for infile in args['<infile>']:
 		for f in glob.glob(infile):
 			commandline = args['<commandline>']
 			commandline = commandline.replace('%F',f)
 
-			logging.info("\n\n----- Running command:\n{}\n".format(commandline))
+			matchText = colorama.Fore.LIGHTRED_EX + "[ DIFF ]" + colorama.Fore.RESET
+			s = colorama.Fore.LIGHTYELLOW_EX + "\n\n----- Running command:\n{}\n".format(commandline) + colorama.Fore.RESET
+			logging.info(s)
+			commandCount += 1
 
 			cl = shlex.split(commandline)
 			logging.debug("args: {}".format(str(cl)))
@@ -165,6 +173,7 @@ def main():
 			proc.wait()
 			if( proc.returncode != 0 ):
 				logging.error("Command failed: {}".format(commandline))
+				commandErrorCount += 1
 
 	# HTML Header
 	outBuf = []
@@ -189,11 +198,31 @@ def main():
 
 	outFiles = getFilesModifiedAfterFile("STARTTIME")
 
-	logging.info("--- Saving results to expected")
 	if args['--save']:
+		logging.info("--- Saving results to expected")
 		saveResults(outFiles)
 
+	# Check for missing/unexpected files
+	expectedFiles = glob.glob(os.path.join(os.path.dirname(outFiles[0]),"expected","*"))
+	efSet = set()
+	for f in expectedFiles:
+		efSet.add(os.path.basename(f))
+
+	ofSet = set()
+	for f in outFiles:
+		ofSet.add(os.path.basename(f))
+
+	extraFiles = ofSet - efSet
+	missingFiles = efSet - ofSet
+
+	for f in sorted(extraFiles):
+		logging.info("Unexpected output file was generated: {}".format(f))
+
+	for f in sorted(missingFiles):
+		logging.info("Expected output file not generated: {}".format(f))
+
 	logging.info("--- Comparing outputs with expected outputs:")
+	fileChangeCount = 0
 	d = difflib.HtmlDiff(8,80)
 	for f in sorted(outFiles):
 		# Diffs
@@ -206,9 +235,11 @@ def main():
 		if os.path.exists(expectedFilePath):
 			expected = loadFile(expectedFilePath)
 
-			matchText = "[ DIFF ]"
+			matchText = colorama.Style.BRIGHT + colorama.Back.LIGHTRED_EX + "[  DIFF  ]" + colorama.Back.RESET + colorama.Style.RESET_ALL
 			if actual==expected:
-				matchText = "        "
+				matchText = colorama.Back.LIGHTGREEN_EX + "[ NODIFF ]" + colorama.Style.RESET_ALL
+			else:
+				fileChangeCount += 1
 
 			logging.info("{} {}".format(matchText,f))
 
@@ -239,25 +270,21 @@ def main():
 
 	htmlout.writelines(["%s\n" % item for item in outBuf])
 
-	# Check for missing/unexpected files
-	expectedFiles = glob.glob(os.path.join(os.path.dirname(outFiles[0]),"expected","*"))
-	efSet = set()
-	for f in expectedFiles:
-		efSet.add(os.path.basename(f))
+	print("\nFinished executing {} commands ({} error(s) occured).".format(commandCount,commandErrorCount))
+	print("{} output files were generated ({} expected).".format(len(outFiles),len(expectedFiles)))
 
-	ofSet = set()
-	for f in outFiles:
-		ofSet.add(os.path.basename(f))
+	if len(extraFiles) > 0:
+		print("Some unexpected output files were generated.")
 
-	extraFiles = ofSet - efSet
-	missingFiles = efSet - ofSet
+	if len(missingFiles) > 0:
+		print("Some expected output files were not generated.")
 
-	for f in sorted(extraFiles):
-		logging.error("Unexpected output file: {}".format(f))
+	if fileChangeCount > 0:
+		print("Differences found with expected output, view results.html for details")
+	else:
+		print("No differences with expected output found.")
 
-	for f in sorted(missingFiles):
-		logging.error("Missing output file: {}".format(f))
-
+	print()
 
 	return
 
