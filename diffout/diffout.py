@@ -143,6 +143,8 @@ def main():
 	#expected = open("out/expected/t1-utf8.txt", encoding="utf-8").readlines()
 	htmlout = open("results.html", mode='w', encoding="utf-8")
 
+	import sys
+	sys.setrecursionlimit(1500)
 	# Clean up
 	# Delete any output files in base directory that match those in expected/
 
@@ -175,24 +177,7 @@ def main():
 
 	# HTML Header
 	outBuf = []
-	outBuf.append('<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">')
-	outBuf.append('<html>')
-	outBuf.append('')
-	outBuf.append('<head>')
-	outBuf.append(' <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />')
-	outBuf.append(' <title></title>')
-	outBuf.append(' <style type="text/css">')
-	outBuf.append('     table.diff {font-family:Courier; border:medium;}')
-	outBuf.append('     .diff_header {background-color:#e0e0e0}')
-	outBuf.append('     td.diff_header {text-align:right}')
-	outBuf.append('     .diff_next {background-color:#c0c0c0}')
-	outBuf.append('     .diff_add {background-color:#aaffaa}')
-	outBuf.append('     .diff_chg {background-color:#ffff77}')
-	outBuf.append('     .diff_sub {background-color:#ffaaaa}')
-	outBuf.append(' </style>')
-	outBuf.append('</head>')
-	outBuf.append('')
-	outBuf.append('<body>')
+	outBuf.extend(htmlHeader)
 
 	outFiles = getFilesModifiedAfterFile("STARTTIME")
 	print(outFiles)
@@ -242,30 +227,12 @@ def main():
 
 			logging.info("{} {}".format(matchText,f))
 
-			s = d.make_table(actual, expected, f, expectedFilePath, True)
+			s = d.make_table(expected, actual, expectedFilePath, f, True)
 			outBuf.append(s)
 			outBuf.append('<br />')
 
 	# HTML Footer
-	outBuf.append('    <table class="diff" summary="Legends">')
-	outBuf.append('        <tr> <th colspan="2"> Legends </th> </tr>')
-	outBuf.append('        <tr> <td> <table border="" summary="Colors">')
-	outBuf.append('                   <tr><th> Colors </th> </tr>')
-	outBuf.append('                   <tr><td class="diff_add">&nbsp;Added&nbsp;</td></tr>')
-	outBuf.append('                   <tr><td class="diff_chg">Changed</td> </tr>')
-	outBuf.append('                   <tr><td class="diff_sub">Deleted</td> </tr>')
-	outBuf.append('               </table></td>')
-	outBuf.append('        <td> <table border="" summary="Links">')
-	outBuf.append('                   <tr><th colspan="2"> Links </th> </tr>')
-	outBuf.append('                   <tr><td>(f)irst change</td> </tr>')
-	outBuf.append('                   <tr><td>(n)ext change</td> </tr>')
-	outBuf.append('                   <tr><td>(t)op</td> </tr>')
-	outBuf.append('               </table>')
-	outBuf.append('        </td> </tr>')
-	outBuf.append('    </table>')
-	outBuf.append('</body>')
-	outBuf.append("")
-	outBuf.append('</html>')
+	outBuf.extend(htmlFooter)
 
 	htmlout.writelines(["%s\n" % item for item in outBuf])
 
@@ -286,6 +253,47 @@ def main():
 	print()
 
 	return
+
+
+htmlHeader = ('<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">',
+			  '<html>',
+			  '',
+			  '<head>',
+			  ' <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />',
+			  ' <title>diffout results</title>',
+			  ' <style type="text/css">',
+			  '     table.diff {font-family:Courier; border:medium;}',
+			  '     .diff_header {background-color:#e0e0e0}',
+			  '     td.diff_header {text-align:right}',
+			  '     .diff_next {background-color:#c0c0c0}',
+			  '     .diff_add {background-color:#aaffaa}',
+			  '     .diff_chg {background-color:#ffff77}',
+			  '     .diff_sub {background-color:#ffaaaa}',
+			  ' </style>',
+			  '</head>',
+			  '',
+			  '<body>')
+
+htmlFooter = ('    <table class="diff" summary="Legends">',
+             '        <tr> <th colspan="2"> Legends </th> </tr>',
+             '        <tr> <td> <table border="" summary="Colors">',
+             '                   <tr><th> Colors </th> </tr>',
+             '                   <tr><td class="diff_add">&nbsp;Added&nbsp;</td></tr>',
+             '                   <tr><td class="diff_chg">Changed</td> </tr>',
+             '                   <tr><td class="diff_sub">Deleted</td> </tr>',
+             '               </table></td>',
+             '        <td> <table border="" summary="Links">',
+             '                   <tr><th colspan="2"> Links </th> </tr>',
+             '                   <tr><td>(f)irst change</td> </tr>',
+             '                   <tr><td>(n)ext change</td> </tr>',
+             '                   <tr><td>(t)op</td> </tr>',
+             '               </table>',
+             '        </td> </tr>',
+             '    </table>',
+             '</body>',
+             '',
+             '</html>')
+
 
 
 if __name__ == "__main__":

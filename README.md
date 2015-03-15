@@ -1,6 +1,6 @@
-#ppimg
+#diffout
 
-Performs various tasks related to illustrations during the post-processing of books for pgdp.org using the ppgen post-processing tool.
+Runs a command on a list of input files, then diffs the resulting outputs with copies stored from a previous run.
 
 ##Installing
 
@@ -8,4 +8,4 @@ Clone this repository, or download zip.
 
 Then install the required python dependencies with:
 
-    pip install docopt Pillow beautifulsoup4
+    pip install docopt colorama
