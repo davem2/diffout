@@ -86,16 +86,20 @@ def loadFile(fn):
 	return inBuf;
 
 
+def splitPath( path ):
+	path = os.path.abspath(path)
+	path = os.path.expanduser(path)
+	path = os.path.expandvars(path)
+	path = os.path.normpath(path)
+
+	return os.path.split(path)
+
+
 def getFilesModifiedAfterFile( fileName ):
 	startTime = os.path.getmtime(fileName)
 
-	basePath = os.path.abspath(fileName)
-	basePath = os.path.expanduser(basePath)
-	basePath = os.path.expandvars(basePath)
-	basePath = os.path.dirname(basePath)
-
-	searchPath = os.path.join(basePath, "*")
-	print(searchPath)
+	p, _ = splitPath(fileName)
+	searchPath = os.path.join(p, "*")
 
 	modifiedFiles = []
 	for f in glob.glob(searchPath):
@@ -108,16 +112,13 @@ def getFilesModifiedAfterFile( fileName ):
 
 def saveResults( fileList ):
 	for f in fileList:
-		f = os.path.abspath(f)
-		f = os.path.expanduser(f)
-		f = os.path.expandvars(f)
-		basePath = os.path.dirname(f)
+		path, fname = splitPath(f)
 
-		expectedDirPath = os.path.join(basePath,"expected")
+		expectedDirPath = os.path.join(path,"expected")
 		if not os.path.exists(expectedDirPath):
 			os.makedirs(expectedDirPath)
 
-		dstfile = os.path.join(basePath,"expected",os.path.basename(f))
+		dstfile = os.path.join(path,"expected",fname)
 		srcfile = f
 		shutil.copy(srcfile,dstfile)
 
@@ -142,9 +143,6 @@ def main():
 	#expected = open("out/expected/t1-utf8.txt", encoding="utf-8").readlines()
 	htmlout = open("results.html", mode='w', encoding="utf-8")
 
-	#testIndex = buildTestIndex(testDirectoryPath)
-	#print(testIndex)
-
 	# Clean up
 	# Delete any output files in base directory that match those in expected/
 
@@ -152,7 +150,7 @@ def main():
 	f = open("STARTTIME",'w')
 	f.write('.')
 	f.close()
-	time.sleep(2)
+	time.sleep(1)
 
 	# Run command on each input file
 	commandCount = 0
@@ -163,8 +161,8 @@ def main():
 			commandline = commandline.replace('%F',f)
 
 			matchText = colorama.Fore.LIGHTRED_EX + "[ DIFF ]" + colorama.Fore.RESET
-			s = colorama.Fore.LIGHTYELLOW_EX + "\n\n----- Running command:\n{}\n".format(commandline) + colorama.Fore.RESET
-			logging.info(s)
+			s = colorama.Fore.LIGHTYELLOW_EX + "\n----- Running command:\n{}\n".format(commandline) + colorama.Fore.RESET
+			print(s)
 			commandCount += 1
 
 			cl = shlex.split(commandline)
@@ -197,13 +195,14 @@ def main():
 	outBuf.append('<body>')
 
 	outFiles = getFilesModifiedAfterFile("STARTTIME")
+	print(outFiles)
 
 	if args['--save']:
 		logging.info("--- Saving results to expected")
 		saveResults(outFiles)
 
 	# Check for missing/unexpected files
-	expectedFiles = glob.glob(os.path.join(os.path.dirname(outFiles[0]),"expected","*"))
+	expectedFiles = glob.glob(os.path.join("expected","*"))
 	efSet = set()
 	for f in expectedFiles:
 		efSet.add(os.path.basename(f))
@@ -274,13 +273,13 @@ def main():
 	print("{} output files were generated ({} expected).".format(len(outFiles),len(expectedFiles)))
 
 	if len(extraFiles) > 0:
-		print("Some unexpected output files were generated.")
+		print("{} unexpected output files were generated.".format(len(extraFiles)))
 
 	if len(missingFiles) > 0:
-		print("Some expected output files were not generated.")
+		print("{} expected output files were not generated.".format(len(missingFiles)))
 
 	if fileChangeCount > 0:
-		print("Differences found with expected output, view results.html for details")
+		print("{} output files differ with expected output, view results.html for diff results".format(fileChangeCount))
 	else:
 		print("No differences with expected output found.")
 
