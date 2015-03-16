@@ -51,7 +51,7 @@ def loadFile(fn):
 	if encoding == "":
 		try:
 			wbuf = open(fn, "r", encoding='ascii').read()
-			encoding = "ASCII" # we consider ASCII as a subset of Latin-1 for DP purposes
+			encoding = "ASCII"
 			inBuf = wbuf.split("\n")
 		except Exception as e:
 			pass
@@ -78,27 +78,25 @@ def loadFile(fn):
 
 	if encoding == "":
 		fatal("Cannot determine input file decoding")
-	else:
-		# self.info("input file is: {}".format(encoding))
-		if encoding == "ASCII":
-			encoding = "latin_1" # handle ASCII as Latin-1 for DP purposes
 
 	return inBuf;
 
 
-def splitPath( path ):
+def expandPath( path ):
 	path = os.path.abspath(path)
 	path = os.path.expanduser(path)
 	path = os.path.expandvars(path)
 	path = os.path.normpath(path)
 
-	return os.path.split(path)
+	return path
 
 
-def getFilesModifiedAfterFile( fileName ):
-	startTime = os.path.getmtime(fileName)
+def getFilesModifiedAfterFile( path ):
 
-	p, _ = splitPath(fileName)
+	path = expandPath(path)
+	startTime = os.path.getmtime(path)
+
+	lp, rp = os.path.split(path)
 	searchPath = os.path.join(p, "*")
 
 	modifiedFiles = []
@@ -110,17 +108,111 @@ def getFilesModifiedAfterFile( fileName ):
 	return modifiedFiles
 
 
-def saveResults( fileList ):
+def getDirectoryFileList( path ):
+	path = expandPath(path)
+	lp, rp = os.path.split(path)
+	if not os.path.isdir(rp):
+		logging.error("{} is not a directory".format(path))
+		return None
+
+	searchPath = os.path.join(lp,rp,"*")
+	return glob.glob(searchPath)
+
+
+def saveFiles( fileList, destDir ):
+	destDir = expandPath(destDir)
 	for f in fileList:
-		path, fname = splitPath(f)
+		f = expandPath(f)
+		lp, rp = os.path.split(f)
 
-		expectedDirPath = os.path.join(path,"expected")
-		if not os.path.exists(expectedDirPath):
-			os.makedirs(expectedDirPath)
+		if not os.path.exists(destDir):
+			os.makedirs(destDir)
 
-		dstfile = os.path.join(path,"expected",fname)
-		srcfile = f
-		shutil.copy(srcfile,dstfile)
+		dstFile = os.path.join(destDir,rp)
+		srcFile = f
+		print(srcFile)
+		print(dstFile)
+		shutil.copy(srcFile,dstFile)
+
+
+def diffDir( newDir, oldDir ):
+	# HTML Header
+	outBuf = []
+	outBuf.extend(htmlHeader)
+
+	# Check for missing/unexpected files
+	newFiles = getDirectoryFileList(newDir)
+	oldFiles = getDirectoryFileList(oldDir)
+	ofSet = set()
+	for f in oldFiles:
+		efSet.add(os.path.basename(f))
+
+	nfSet = set()
+	for f in newFiles:
+		ofSet.add(os.path.basename(f))
+
+	extraFiles = nfSet - ofSet
+	missingFiles = ofSet - nfSet
+
+	#for f in sorted(extraFiles):
+		#logging.info("Unexpected output file was generated: {}".format(f))
+
+	for f in sorted(missingFiles):
+		matchText = colorama.Style.BRIGHT + colorama.Back.LIGHTYELLOW_EX + "[ EXTRA ]" + colorama.Back.RESET + colorama.Style.RESET_ALL
+		print("{} Expected output file not generated: {}".format(matchText,f))
+
+	logging.info("--- Comparing outputs with expected outputs:")
+	fileChangeCount = 0
+	d = difflib.HtmlDiff(8,80)
+	for f in sorted(outFiles):
+		# Diffs
+		basePath = os.path.dirname(f)
+		outFileName = os.path.basename(f)
+		expectedFilePath = os.path.join(basePath,"expected",outFileName)
+
+		actual = loadFile(f)
+
+		if os.path.exists(expectedFilePath):
+			expected = loadFile(expectedFilePath)
+
+			matchText = colorama.Style.BRIGHT + colorama.Back.LIGHTRED_EX + "[  DIFF  ]" + colorama.Back.RESET + colorama.Style.RESET_ALL
+			if actual==expected:
+				matchText = colorama.Back.LIGHTGREEN_EX + "[ NODIFF ]" + colorama.Style.RESET_ALL
+			else:
+				fileChangeCount += 1
+
+			print("{} {}".format(matchText,f))
+
+			s = d.make_table(expected, actual, expectedFilePath, f, True)
+			outBuf.append(s)
+			outBuf.append('<br />')
+		else:
+			matchText = colorama.Style.BRIGHT + colorama.Back.LIGHTBLUE_EX + "[ EXTRA ]" + colorama.Back.RESET + colorama.Style.RESET_ALL
+			print("{} Unexpected output file was generated: {}".format(matchText,f))
+
+	# HTML Footer
+	outBuf.extend(htmlFooter)
+
+	# Write out results
+	htmlout = open("results.html", mode='w', encoding="utf-8")
+	htmlout.writelines(["%s\n" % item for item in outBuf])
+	htmlout.close()
+
+	# Finished, summarize results
+	print("\nFinished executing {} commands ({} error(s) occured).".format(commandCount,commandErrorCount))
+	print("{} output files were generated ({} expected).".format(len(outFiles),len(expectedFiles)))
+
+	if len(extraFiles) > 0:
+		print("{} unexpected output files were generated.".format(len(extraFiles)))
+	if len(missingFiles) > 0:
+		print("{} expected output files were not generated.".format(len(missingFiles)))
+	if fileChangeCount > 0:
+		print("{} output files differ with expected output, view results.html for diff results".format(fileChangeCount))
+	else:
+		print("No differences with expected output found.")
+	print()
+
+	return
 
 
 def main():
@@ -139,14 +231,15 @@ def main():
 	logging.basicConfig(format='%(levelname)s: %(message)s', level=logLevel)
 	logging.debug(args)
 
-	#actual = open("out/t1-utf8.txt", encoding="utf-8").readlines()
-	#expected = open("out/expected/t1-utf8.txt", encoding="utf-8").readlines()
-	htmlout = open("results.html", mode='w', encoding="utf-8")
+	if args['--save']:
+		logging.info("--- Saving results to expected")
+		#TODO clear expected first
+		saveFiles(getDirectoryFileList("output"),"expected")
+		return
 
-	import sys
-	sys.setrecursionlimit(1500)
 	# Clean up
 	# Delete any output files in base directory that match those in expected/
+	#TODO.. clear output/
 
 	# Write marker file for time index
 	f = open("STARTTIME",'w')
@@ -175,82 +268,11 @@ def main():
 				logging.error("Command failed: {}".format(commandline))
 				commandErrorCount += 1
 
-	# HTML Header
-	outBuf = []
-	outBuf.extend(htmlHeader)
-
+	# Copy recently modified files into output/
 	outFiles = getFilesModifiedAfterFile("STARTTIME")
-	print(outFiles)
+	saveFiles(outFiles,"output")
 
-	if args['--save']:
-		logging.info("--- Saving results to expected")
-		saveResults(outFiles)
-
-	# Check for missing/unexpected files
-	expectedFiles = glob.glob(os.path.join("expected","*"))
-	efSet = set()
-	for f in expectedFiles:
-		efSet.add(os.path.basename(f))
-
-	ofSet = set()
-	for f in outFiles:
-		ofSet.add(os.path.basename(f))
-
-	extraFiles = ofSet - efSet
-	missingFiles = efSet - ofSet
-
-	for f in sorted(extraFiles):
-		logging.info("Unexpected output file was generated: {}".format(f))
-
-	for f in sorted(missingFiles):
-		logging.info("Expected output file not generated: {}".format(f))
-
-	logging.info("--- Comparing outputs with expected outputs:")
-	fileChangeCount = 0
-	d = difflib.HtmlDiff(8,80)
-	for f in sorted(outFiles):
-		# Diffs
-		basePath = os.path.dirname(f)
-		outFileName = os.path.basename(f)
-		expectedFilePath = os.path.join(basePath,"expected",outFileName)
-
-		actual = loadFile(f)
-
-		if os.path.exists(expectedFilePath):
-			expected = loadFile(expectedFilePath)
-
-			matchText = colorama.Style.BRIGHT + colorama.Back.LIGHTRED_EX + "[  DIFF  ]" + colorama.Back.RESET + colorama.Style.RESET_ALL
-			if actual==expected:
-				matchText = colorama.Back.LIGHTGREEN_EX + "[ NODIFF ]" + colorama.Style.RESET_ALL
-			else:
-				fileChangeCount += 1
-
-			logging.info("{} {}".format(matchText,f))
-
-			s = d.make_table(expected, actual, expectedFilePath, f, True)
-			outBuf.append(s)
-			outBuf.append('<br />')
-
-	# HTML Footer
-	outBuf.extend(htmlFooter)
-
-	htmlout.writelines(["%s\n" % item for item in outBuf])
-
-	print("\nFinished executing {} commands ({} error(s) occured).".format(commandCount,commandErrorCount))
-	print("{} output files were generated ({} expected).".format(len(outFiles),len(expectedFiles)))
-
-	if len(extraFiles) > 0:
-		print("{} unexpected output files were generated.".format(len(extraFiles)))
-
-	if len(missingFiles) > 0:
-		print("{} expected output files were not generated.".format(len(missingFiles)))
-
-	if fileChangeCount > 0:
-		print("{} output files differ with expected output, view results.html for diff results".format(fileChangeCount))
-	else:
-		print("No differences with expected output found.")
-
-	print()
+	diffDir("output","expected")
 
 	return
 
