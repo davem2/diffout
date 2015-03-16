@@ -4,6 +4,7 @@
 
 Usage:
   diffout [options] [--] <commandline> <infile>...
+  diffout -s | --save
   diffout -h | --help
   diffout --version
 
@@ -97,7 +98,7 @@ def getFilesModifiedAfterFile( path ):
 	startTime = os.path.getmtime(path)
 
 	lp, rp = os.path.split(path)
-	searchPath = os.path.join(p, "*")
+	searchPath = os.path.join(lp, "*")
 
 	modifiedFiles = []
 	for f in glob.glob(searchPath):
@@ -130,8 +131,6 @@ def saveFiles( fileList, destDir ):
 
 		dstFile = os.path.join(destDir,rp)
 		srcFile = f
-		print(srcFile)
-		print(dstFile)
 		shutil.copy(srcFile,dstFile)
 
 
@@ -140,16 +139,20 @@ def diffDir( newDir, oldDir ):
 	outBuf = []
 	outBuf.extend(htmlHeader)
 
+	logging.info("--- Comparing new outputs with expected outputs:")
+
 	# Check for missing/unexpected files
+	newDir = expandPath(newDir)
+	oldDir = expandPath(oldDir)
 	newFiles = getDirectoryFileList(newDir)
 	oldFiles = getDirectoryFileList(oldDir)
 	ofSet = set()
 	for f in oldFiles:
-		efSet.add(os.path.basename(f))
+		ofSet.add(os.path.basename(f))
 
 	nfSet = set()
 	for f in newFiles:
-		ofSet.add(os.path.basename(f))
+		nfSet.add(os.path.basename(f))
 
 	extraFiles = nfSet - ofSet
 	missingFiles = ofSet - nfSet
@@ -158,24 +161,21 @@ def diffDir( newDir, oldDir ):
 		#logging.info("Unexpected output file was generated: {}".format(f))
 
 	for f in sorted(missingFiles):
-		matchText = colorama.Style.BRIGHT + colorama.Back.LIGHTYELLOW_EX + "[ EXTRA ]" + colorama.Back.RESET + colorama.Style.RESET_ALL
+		matchText = colorama.Style.BRIGHT + colorama.Back.CYAN + "[ MISSING]" + colorama.Back.RESET + colorama.Style.RESET_ALL
 		print("{} Expected output file not generated: {}".format(matchText,f))
 
-	logging.info("--- Comparing outputs with expected outputs:")
 	fileChangeCount = 0
 	d = difflib.HtmlDiff(8,80)
-	for f in sorted(outFiles):
+	for f in sorted(newFiles):
 		# Diffs
-		basePath = os.path.dirname(f)
-		outFileName = os.path.basename(f)
-		expectedFilePath = os.path.join(basePath,"expected",outFileName)
+		fn = os.path.basename(f)
+		expectedFilePath = os.path.join(oldDir,fn)
 
 		actual = loadFile(f)
-
 		if os.path.exists(expectedFilePath):
 			expected = loadFile(expectedFilePath)
 
-			matchText = colorama.Style.BRIGHT + colorama.Back.LIGHTRED_EX + "[  DIFF  ]" + colorama.Back.RESET + colorama.Style.RESET_ALL
+			matchText = colorama.Style.BRIGHT + colorama.Back.LIGHTRED_EX + "[ DIFF   ]" + colorama.Back.RESET + colorama.Style.RESET_ALL
 			if actual==expected:
 				matchText = colorama.Back.LIGHTGREEN_EX + "[ NODIFF ]" + colorama.Style.RESET_ALL
 			else:
@@ -187,8 +187,8 @@ def diffDir( newDir, oldDir ):
 			outBuf.append(s)
 			outBuf.append('<br />')
 		else:
-			matchText = colorama.Style.BRIGHT + colorama.Back.LIGHTBLUE_EX + "[ EXTRA ]" + colorama.Back.RESET + colorama.Style.RESET_ALL
-			print("{} Unexpected output file was generated: {}".format(matchText,f))
+			matchText = colorama.Style.BRIGHT + colorama.Back.BLUE + "[ EXTRA  ]" + colorama.Back.RESET + colorama.Style.RESET_ALL
+			print("{} Unexpected output file was generated: {}".format(matchText,os.path.basename(f)))
 
 	# HTML Footer
 	outBuf.extend(htmlFooter)
@@ -199,18 +199,15 @@ def diffDir( newDir, oldDir ):
 	htmlout.close()
 
 	# Finished, summarize results
-	print("\nFinished executing {} commands ({} error(s) occured).".format(commandCount,commandErrorCount))
-	print("{} output files were generated ({} expected).".format(len(outFiles),len(expectedFiles)))
-
+	print()
 	if len(extraFiles) > 0:
 		print("{} unexpected output files were generated.".format(len(extraFiles)))
 	if len(missingFiles) > 0:
 		print("{} expected output files were not generated.".format(len(missingFiles)))
 	if fileChangeCount > 0:
-		print("{} output files differ with expected output, view results.html for diff results".format(fileChangeCount))
+		print("{} output file(s) differ with expected output, view results.html for diff results".format(fileChangeCount))
 	else:
 		print("No differences with expected output found.")
-	print()
 
 	return
 
@@ -232,14 +229,17 @@ def main():
 	logging.debug(args)
 
 	if args['--save']:
-		logging.info("--- Saving results to expected")
-		#TODO clear expected first
+		logging.info("--- Clearing current expected results")
+		print(expandPath("expected"))
+		shutil.rmtree(expandPath("expected"))
+		logging.info("--- Saving latest results to expected")
 		saveFiles(getDirectoryFileList("output"),"expected")
 		return
 
 	# Clean up
 	# Delete any output files in base directory that match those in expected/
 	#TODO.. clear output/
+	shutil.rmtree(expandPath("output"))
 
 	# Write marker file for time index
 	f = open("STARTTIME",'w')
@@ -273,6 +273,10 @@ def main():
 	saveFiles(outFiles,"output")
 
 	diffDir("output","expected")
+
+	print("\nFinished executing {} command(s) ({} error(s) occured).".format(commandCount,commandErrorCount))
+	print("{} output file(s) were generated ({} expected).".format(len(getDirectoryFileList("output")),len(getDirectoryFileList("expected"))))
+	print()
 
 	return
 
