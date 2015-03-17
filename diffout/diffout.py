@@ -114,7 +114,7 @@ def getDirectoryFileList( path ):
 	lp, rp = os.path.split(path)
 	if not os.path.isdir(rp):
 		logging.error("{} is not a directory".format(path))
-		return None
+		return []
 
 	searchPath = os.path.join(lp,rp,"*")
 	return glob.glob(searchPath)
@@ -208,6 +208,7 @@ def diffDir( newDir, oldDir ):
 		print("{} output file(s) differ with expected output, view results.html for diff results".format(fileChangeCount))
 	else:
 		print("No differences with expected output found.")
+	print()
 
 	return
 
@@ -277,11 +278,11 @@ def main():
 	outFiles = getFilesModifiedAfterFile("STARTTIME")
 	saveFiles(outFiles,"output")
 
-	diffDir("output","expected")
-
 	print("\nFinished executing {} command(s) ({} error(s) occured).".format(commandCount,commandErrorCount))
 	print("{} output file(s) were generated ({} expected).".format(len(getDirectoryFileList("output")),len(getDirectoryFileList("expected"))))
 	print()
+
+	diffDir("output","expected")
 
 	return
 
