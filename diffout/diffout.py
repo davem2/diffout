@@ -229,17 +229,22 @@ def main():
 	logging.debug(args)
 
 	if args['--save']:
-		logging.info("--- Clearing current expected results")
-		print(expandPath("expected"))
-		shutil.rmtree(expandPath("expected"))
+		p = expandPath("expected")
+		if os.path.exists(p):
+			logging.info("--- Clearing current expected results")
+			print(p)
+			shutil.rmtree(p)
+
 		logging.info("--- Saving latest results to expected")
 		saveFiles(getDirectoryFileList("output"),"expected")
 		return
 
-	# Clean up
-	# Delete any output files in base directory that match those in expected/
-	#TODO.. clear output/
-	shutil.rmtree(expandPath("output"))
+	# Delete output files from previous run
+	p = expandPath("output")
+	if os.path.exists(p):
+		logging.info("--- Clearing results from last run")
+		print(p)
+		shutil.rmtree(p)
 
 	# Write marker file for time index
 	f = open("STARTTIME",'w')
