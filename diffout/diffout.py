@@ -36,6 +36,10 @@ import colorama
 
 VERSION="0.1.0" # MAJOR.MINOR.PATCH | http://semver.org
 
+HTML_PATH       = os.path.join("diffout","diffs")
+EXPECTED_PATH   = os.path.join("diffout","expected")
+OUTPUT_PATH     = os.path.join("diffout","output")
+
 
 def fatal( errorMsg ):
 	logging.critical(errorMsg)
@@ -137,6 +141,9 @@ def saveFiles( fileList, destDir ):
 def diffDir( newDir, oldDir ):
 	logging.info("--- Comparing new outputs with expected outputs:")
 
+	if not os.path.exists(HTML_PATH):
+		os.makedirs(HTML_PATH)
+
 	# Index HTML Header
 	indexHtml = []
 	indexHtml.extend(htmlHeader)
@@ -201,16 +208,16 @@ def diffDir( newDir, oldDir ):
 		outBuf.extend(htmlFooter)
 
 		# Write out results
-		p = os.path.join("results","{}.html".format(fn))
+		p = os.path.join(HTML_PATH,"{}.html".format(fn))
 		htmlout = open(p, mode='w', encoding="utf-8")
 		htmlout.writelines(["%s\n" % item for item in outBuf])
 		htmlout.close()
 
 		# Add to index
 		if isDiff:
-			indexHtml.append("<tr><td style='text-align:center;background:red;color:white;font: bold 1em sans-serif, serif;'>DIFF</td><td><a href={0}.html>{0}</a></td></tr>".format(fn))
+			indexHtml.append("<tr><td style='text-align:center;background:red;color:white;font: bold 1em sans-serif, serif;'>DIFF</td><td><a href='{1}/{0}.html'>{0}</a></td></tr>".format(fn,os.path.basename(HTML_PATH)))
 		else:
-			indexHtml.append("<tr><td style='text-align:center;background:green;color:white;font: bold 1em sans-serif, serif;'>NODIFF</td><td><a href={0}.html>{0}</a></td></tr>".format(fn))
+			indexHtml.append("<tr><td style='text-align:center;background:green;color:white;font: bold 1em sans-serif, serif;'>NODIFF</td><td><a href='{1}/{0}.html'>{0}</a></td></tr>".format(fn,os.path.basename(HTML_PATH)))
 
 	# Index HTML Footer
 	indexHtml.append("</table>")
@@ -218,9 +225,8 @@ def diffDir( newDir, oldDir ):
 	indexHtml.append("</html>")
 
 	# Write out index.html
-	if not os.path.exists("results"):
-		os.makedirs("results")
-	p = os.path.join("results","index.html")
+	parentDir = os.path.dirname(HTML_PATH)
+	p = os.path.join(parentDir,"index.html")
 	htmlout = open(p, mode='w', encoding="utf-8")
 	htmlout.writelines(["%s\n" % item for item in indexHtml])
 	htmlout.close()
@@ -257,18 +263,18 @@ def main():
 	logging.debug(args)
 
 	if args['--save']:
-		p = expandPath("expected")
+		p = expandPath(EXPECTED_PATH)
 		if os.path.exists(p):
 			logging.info("--- Clearing current expected results")
 			print(p)
 			shutil.rmtree(p)
 
 		logging.info("--- Saving latest results to expected")
-		saveFiles(getDirectoryFileList("output"),"expected")
+		saveFiles(getDirectoryFileList(OUTPUT_PATH),EXPECTED_PATH)
 		return
 
 	# Delete output files from previous run
-	p = expandPath("output")
+	p = expandPath(OUTPUT_PATH)
 	if os.path.exists(p):
 		logging.info("--- Clearing results from last run")
 		print(p)
@@ -303,13 +309,13 @@ def main():
 
 	# Copy recently modified files into output/
 	outFiles = getFilesModifiedAfterFile("STARTTIME")
-	saveFiles(outFiles,"output")
+	saveFiles(outFiles,OUTPUT_PATH)
 
 	print("\nFinished executing {} command(s) ({} error(s) occured).".format(commandCount,commandErrorCount))
-	print("{} output file(s) were generated ({} expected).".format(len(getDirectoryFileList("output")),len(getDirectoryFileList("expected"))))
+	print("{} output file(s) were generated ({} expected).".format(len(getDirectoryFileList(OUTPUT_PATH)),len(getDirectoryFileList(EXPECTED_PATH))))
 	print()
 
-	diffDir("output","expected")
+	diffDir(OUTPUT_PATH,EXPECTED_PATH)
 
 	return
 
