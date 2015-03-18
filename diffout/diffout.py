@@ -135,11 +135,12 @@ def saveFiles( fileList, destDir ):
 
 
 def diffDir( newDir, oldDir ):
-	# HTML Header
-	outBuf = []
-	outBuf.extend(htmlHeader)
-
 	logging.info("--- Comparing new outputs with expected outputs:")
+
+	# Index HTML Header
+	indexHtml = []
+	indexHtml.extend(htmlHeader)
+	indexHtml.append("<table class='results'>")
 
 	# Check for missing/unexpected files
 	newDir = expandPath(newDir)
@@ -167,11 +168,16 @@ def diffDir( newDir, oldDir ):
 	fileChangeCount = 0
 	d = difflib.HtmlDiff(8,80)
 	for f in sorted(newFiles):
+		# HTML Header
+		outBuf = []
+		outBuf.extend(htmlHeader)
+
 		# Diffs
 		fn = os.path.basename(f)
 		expectedFilePath = os.path.join(oldDir,fn)
 
 		actual = loadFile(f)
+		isDiff = False
 		if os.path.exists(expectedFilePath):
 			expected = loadFile(expectedFilePath)
 
@@ -179,6 +185,7 @@ def diffDir( newDir, oldDir ):
 			if actual==expected:
 				matchText = colorama.Back.LIGHTGREEN_EX + "[ NODIFF ]" + colorama.Style.RESET_ALL
 			else:
+				isDiff = True
 				fileChangeCount += 1
 
 			print("{} {}".format(matchText,f))
@@ -190,12 +197,32 @@ def diffDir( newDir, oldDir ):
 			matchText = colorama.Style.BRIGHT + colorama.Back.BLUE + "[ EXTRA  ]" + colorama.Back.RESET + colorama.Style.RESET_ALL
 			print("{} Unexpected output file was generated: {}".format(matchText,os.path.basename(f)))
 
-	# HTML Footer
-	outBuf.extend(htmlFooter)
+		# HTML Footer
+		outBuf.extend(htmlFooter)
 
-	# Write out results
-	htmlout = open("results.html", mode='w', encoding="utf-8")
-	htmlout.writelines(["%s\n" % item for item in outBuf])
+		# Write out results
+		p = os.path.join("results","{}.html".format(fn))
+		htmlout = open(p, mode='w', encoding="utf-8")
+		htmlout.writelines(["%s\n" % item for item in outBuf])
+		htmlout.close()
+
+		# Add to index
+		if isDiff:
+			indexHtml.append("<tr><td style='text-align:center;background:red;color:white;font: bold 1em sans-serif, serif;'>DIFF</td><td><a href={0}.html>{0}</a></td></tr>".format(fn))
+		else:
+			indexHtml.append("<tr><td style='text-align:center;background:green;color:white;font: bold 1em sans-serif, serif;'>NODIFF</td><td><a href={0}.html>{0}</a></td></tr>".format(fn))
+
+	# Index HTML Footer
+	indexHtml.append("</table>")
+	indexHtml.append("</body>")
+	indexHtml.append("</html>")
+
+	# Write out index.html
+	if not os.path.exists("results"):
+		os.makedirs("results")
+	p = os.path.join("results","index.html")
+	htmlout = open(p, mode='w', encoding="utf-8")
+	htmlout.writelines(["%s\n" % item for item in indexHtml])
 	htmlout.close()
 
 	# Finished, summarize results
@@ -301,6 +328,8 @@ htmlHeader = ('<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "h
 			  '     .diff_add {background-color:#aaffaa}',
 			  '     .diff_chg {background-color:#ffff77}',
 			  '     .diff_sub {background-color:#ffaaaa}',
+			  '		table.results {margin:3em auto; width:auto;background:#eee;border-spacing:0.3em;border:thin solid #ccc}',
+			  '		.results td {text-align: left; padding: 0.3em 0.6em; border: none;}',
 			  ' </style>',
 			  '</head>',
 			  '',
