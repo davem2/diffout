@@ -205,11 +205,11 @@ def diffDir( newDir, oldDir ):
 
 		# Add to index
 		if diffResult == "DIFF":
-			resultCell = "<td style='text-align:center;background:red;color:white;font: bold 1em sans-serif, serif;'>DIFF</td>"
+			resultCell = "<td style='text-align:center;background:#d55;color:white;font: bold 1em sans-serif, serif;'>DIFF</td>"
 		elif diffResult == "NODIFF":
-			resultCell = "<td style='text-align:center;background:green;color:white;font: bold 1em sans-serif, serif;'>NODIFF</td>"
+			resultCell = "<td style='text-align:center;background:#5b5;color:white;font: bold 1em sans-serif, serif;'>NODIFF</td>"
 		elif diffResult == "EXTRA":
-			resultCell = "<td style='text-align:center;background:blue;color:white;font: bold 1em sans-serif, serif;'>EXTRA</td>"
+			resultCell = "<td style='text-align:center;background:#55b;color:white;font: bold 1em sans-serif, serif;'>EXTRA</td>"
 
 		indexHtml.append("<tr>{4}<td>{0}</td><td><a href='{1}/{0}.html'>diff results</a></td><td><a href='{2}/{0}'>output file</a></td><td><a href='{3}/{0}'>expected output file</a></td></tr>".format(fn,os.path.basename(HTML_PATH),os.path.basename(OUTPUT_PATH),os.path.basename(EXPECTED_PATH),resultCell))
 
@@ -226,7 +226,7 @@ def diffDir( newDir, oldDir ):
 	for f in sorted(missingFiles):
 		#matchText = colorama.Style.BRIGHT + colorama.Back.CYAN + "[ MISSING]" + colorama.Back.RESET + colorama.Style.RESET_ALL
 		#print("{} Expected output file not generated: {}".format(matchText,f))
-		indexHtml.append("<tr><td style='text-align:center;background:cyan;color:white;font: bold 1em sans-serif, serif;'>MISSING</td><td>{0}</td><td><a href='{1}/{0}.html'>diff results</a></td><td><a href='{2}/{0}'>output file</a></td><td><a href='{3}/{0}'>expected output file</a></td></tr>".format(os.path.basename(f),os.path.basename(HTML_PATH),os.path.basename(OUTPUT_PATH),os.path.basename(EXPECTED_PATH)))
+		indexHtml.append("<tr><td style='text-align:center;background:#aaa;color:white;font: bold 1em sans-serif, serif;'>MISSING</td><td>{0}</td><td><a href='{1}/{0}.html'>diff results</a></td><td><a href='{2}/{0}'>output file</a></td><td><a href='{3}/{0}'>expected output file</a></td></tr>".format(os.path.basename(f),os.path.basename(HTML_PATH),os.path.basename(OUTPUT_PATH),os.path.basename(EXPECTED_PATH)))
 
 	# Index HTML Footer
 	indexHtml.append("</table>")
