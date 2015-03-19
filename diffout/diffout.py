@@ -36,9 +36,10 @@ import colorama
 
 VERSION="0.1.0" # MAJOR.MINOR.PATCH | http://semver.org
 
-HTML_PATH       = os.path.join("diffout","diffs")
-EXPECTED_PATH   = os.path.join("diffout","expected")
-OUTPUT_PATH     = os.path.join("diffout","output")
+HTML_PATH         = os.path.join("diffout","diffs")
+EXPECTED_PATH     = os.path.join("diffout","expected")
+OUTPUT_PATH       = os.path.join("diffout","output")
+TERMINAL_OUT_PATH = os.path.join("diffout","terminal")
 
 
 def fatal( errorMsg ):
@@ -115,12 +116,11 @@ def getFilesModifiedAfterFile( path ):
 
 def getDirectoryFileList( path ):
 	path = expandPath(path)
-	lp, rp = os.path.split(path)
-	if not os.path.isdir(rp):
+	if not os.path.isdir(path):
 		logging.error("{} is not a directory".format(path))
 		return []
 
-	searchPath = os.path.join(lp,rp,"*")
+	searchPath = os.path.join(path,"*")
 	return glob.glob(searchPath)
 
 
@@ -262,12 +262,24 @@ def main():
 	logging.basicConfig(format='%(levelname)s: %(message)s', level=logLevel)
 	logging.debug(args)
 
+	# Make directories if missing
+	if not os.path.exists(EXPECTED_PATH):
+		os.makedirs(EXPECTED_PATH)
+	if not os.path.exists(OUTPUT_PATH):
+		os.makedirs(OUTPUT_PATH)
+	if not os.path.exists(HTML_PATH):
+		os.makedirs(HTML_PATH)
+	if not os.path.exists(TERMINAL_OUT_PATH):
+		os.makedirs(TERMINAL_OUT_PATH)
+
+	# Save command
 	if args['--save']:
 		p = expandPath(EXPECTED_PATH)
 		if os.path.exists(p):
 			logging.info("--- Clearing current expected results")
 			print(p)
 			shutil.rmtree(p)
+			os.makedirs(p)
 
 		logging.info("--- Saving latest results to expected")
 		saveFiles(getDirectoryFileList(OUTPUT_PATH),EXPECTED_PATH)
@@ -279,6 +291,24 @@ def main():
 		logging.info("--- Clearing results from last run")
 		print(p)
 		shutil.rmtree(p)
+		os.makedirs(p)
+
+
+	# Delete diff from previous run
+	p = expandPath(HTML_PATH)
+	if os.path.exists(p):
+		logging.info("--- Clearing diffs from last run")
+		print(p)
+		shutil.rmtree(p)
+		os.makedirs(p)
+
+	# Delete terminal output files from previous run
+	p = expandPath(TERMINAL_OUT_PATH)
+	if os.path.exists(p):
+		logging.info("--- Clearing terminal output logs from last run")
+		print(p)
+		shutil.rmtree(p)
+		os.makedirs(p)
 
 	# Write marker file for time index
 	f = open("STARTTIME",'w')
@@ -293,6 +323,9 @@ def main():
 		for f in glob.glob(infile):
 			commandline = args['<commandline>']
 			commandline = commandline.replace('%F',f)
+#			terminalOutPath = open(os.path.join(TERMINAL_OUT_PATH,os.path.basename(f)))
+
+#			print(terminalOutPath)
 
 			matchText = colorama.Fore.LIGHTRED_EX + "[ DIFF ]" + colorama.Fore.RESET
 			s = colorama.Fore.LIGHTYELLOW_EX + "\n----- Running command:\n{}\n".format(commandline) + colorama.Fore.RESET
