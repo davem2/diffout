@@ -141,6 +141,11 @@ def saveFiles( fileList, destDir ):
 def diffDir( newDir, oldDir ):
 	logging.info("--- Comparing new outputs with expected outputs:")
 
+	newDir = expandPath(newDir)
+	oldDir = expandPath(oldDir)
+	newFiles = getDirectoryFileList(newDir)
+	oldFiles = getDirectoryFileList(oldDir)
+
 	if not os.path.exists(HTML_PATH):
 		os.makedirs(HTML_PATH)
 
@@ -149,27 +154,8 @@ def diffDir( newDir, oldDir ):
 	indexHtml.extend(htmlHeader)
 	indexHtml.append("<table class='results'>")
 
-	# Check for missing/unexpected files
-	newDir = expandPath(newDir)
-	oldDir = expandPath(oldDir)
-	newFiles = getDirectoryFileList(newDir)
-	oldFiles = getDirectoryFileList(oldDir)
-	nfSet = set()
-	for f in newFiles:
-		nfSet.add(os.path.basename(f))
-	ofSet = set()
-	for f in oldFiles:
-		ofSet.add(os.path.basename(f))
-
-	extraFiles = nfSet - ofSet
-	missingFiles = ofSet - nfSet
-
 	#for f in sorted(extraFiles):
 		#logging.info("Unexpected output file was generated: {}".format(f))
-
-	for f in sorted(missingFiles):
-		matchText = colorama.Style.BRIGHT + colorama.Back.CYAN + "[ MISSING]" + colorama.Back.RESET + colorama.Style.RESET_ALL
-		print("{} Expected output file not generated: {}".format(matchText,f))
 
 	fileChangeCount = 0
 	d = difflib.HtmlDiff(8,80)
@@ -183,15 +169,16 @@ def diffDir( newDir, oldDir ):
 		expectedFilePath = os.path.join(oldDir,fn)
 
 		actual = loadFile(f)
-		isDiff = False
+		diffResult = ""
 		if os.path.exists(expectedFilePath):
 			expected = loadFile(expectedFilePath)
 
 			matchText = colorama.Style.BRIGHT + colorama.Back.LIGHTRED_EX + "[ DIFF   ]" + colorama.Back.RESET + colorama.Style.RESET_ALL
 			if actual==expected:
 				matchText = colorama.Back.LIGHTGREEN_EX + "[ NODIFF ]" + colorama.Style.RESET_ALL
+				diffResult = "NODIFF"
 			else:
-				isDiff = True
+				diffResult = "DIFF"
 				fileChangeCount += 1
 
 			print("{} {}".format(matchText,f))
@@ -201,6 +188,7 @@ def diffDir( newDir, oldDir ):
 			outBuf.append('<br />')
 		else:
 			matchText = colorama.Style.BRIGHT + colorama.Back.BLUE + "[ EXTRA  ]" + colorama.Back.RESET + colorama.Style.RESET_ALL
+			diffResult = "EXTRA"
 			print("{} Unexpected output file was generated: {}".format(matchText,os.path.basename(f)))
 
 		# HTML Footer
@@ -213,10 +201,29 @@ def diffDir( newDir, oldDir ):
 		htmlout.close()
 
 		# Add to index
-		if isDiff:
-			indexHtml.append("<tr><td style='text-align:center;background:red;color:white;font: bold 1em sans-serif, serif;'>DIFF</td><td><a href='{1}/{0}.html'>{0}</a></td></tr>".format(fn,os.path.basename(HTML_PATH)))
-		else:
-			indexHtml.append("<tr><td style='text-align:center;background:green;color:white;font: bold 1em sans-serif, serif;'>NODIFF</td><td><a href='{1}/{0}.html'>{0}</a></td></tr>".format(fn,os.path.basename(HTML_PATH)))
+		if diffResult == "DIFF":
+			resultCell = "<td style='text-align:center;background:red;color:white;font: bold 1em sans-serif, serif;'>DIFF</td>"
+		elif diffResult == "NODIFF":
+			resultCell = "<td style='text-align:center;background:green;color:white;font: bold 1em sans-serif, serif;'>NODIFF</td>"
+		elif diffResult == "EXTRA":
+			resultCell = "<td style='text-align:center;background:blue;color:white;font: bold 1em sans-serif, serif;'>EXTRA</td>"
+
+		indexHtml.append("<tr>{4}<td>{0}</td><td><a href='{1}/{0}.html'>diff results</a></td><td><a href='{2}/{0}'>output file</a></td><td><a href='{3}/{0}'>expected output file</a></td></tr>".format(fn,os.path.basename(HTML_PATH),os.path.basename(OUTPUT_PATH),os.path.basename(EXPECTED_PATH),resultCell))
+
+	# Check for missing/unexpected files
+	nfSet = set()
+	for f in newFiles:
+		nfSet.add(os.path.basename(f))
+	ofSet = set()
+	for f in oldFiles:
+		ofSet.add(os.path.basename(f))
+
+	extraFiles = nfSet - ofSet
+	missingFiles = ofSet - nfSet
+	for f in sorted(missingFiles):
+		matchText = colorama.Style.BRIGHT + colorama.Back.CYAN + "[ MISSING]" + colorama.Back.RESET + colorama.Style.RESET_ALL
+		print("{} Expected output file not generated: {}".format(matchText,f))
+		indexHtml.append("<tr><td style='text-align:center;background:cyan;color:white;font: bold 1em sans-serif, serif;'>MISSING</td><td>{0}</td><td><a href='{1}/{0}.html'>diff results</a></td><td><a href='{2}/{0}'>output file</a></td><td><a href='{3}/{0}'>expected output file</a></td></tr>".format(fn,os.path.basename(HTML_PATH),os.path.basename(OUTPUT_PATH),os.path.basename(EXPECTED_PATH)))
 
 	# Index HTML Footer
 	indexHtml.append("</table>")
@@ -237,7 +244,7 @@ def diffDir( newDir, oldDir ):
 	if len(missingFiles) > 0:
 		print("{} expected output files were not generated.".format(len(missingFiles)))
 	if fileChangeCount > 0:
-		print("{} output file(s) differ with expected output, view results.html for diff results".format(fileChangeCount))
+		print("{} output file(s) differ with expected output, view diffout/results.html for diff results".format(fileChangeCount))
 	else:
 		print("No differences with expected output found.")
 	print()
