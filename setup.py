@@ -17,7 +17,7 @@ setup(
   },
   install_requires = [
     'docopt >= 0.6.1',
-    'colorama >= 0.3.3',
+    #'colorama >= 0.3.3',
   ],
   classifiers = [
     "Environment :: Console",

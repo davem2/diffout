@@ -31,7 +31,7 @@ import shutil
 import shlex
 import subprocess
 import time
-import colorama
+#import colorama
 
 
 VERSION="0.1.0" # MAJOR.MINOR.PATCH | http://semver.org
@@ -173,10 +173,12 @@ def diffDir( newDir, oldDir ):
 		if os.path.exists(expectedFilePath):
 			expected = loadFile(expectedFilePath)
 
-			matchText = colorama.Style.BRIGHT + colorama.Back.LIGHTRED_EX + "[ DIFF   ]" + colorama.Back.RESET + colorama.Style.RESET_ALL
+			#matchText = colorama.Style.BRIGHT + colorama.Back.LIGHTRED_EX + "[ DIFF   ]" + colorama.Back.RESET + colorama.Style.RESET_ALL
+			matchText = "[ DIFF   ]"
 			if actual==expected:
-				matchText = colorama.Back.LIGHTGREEN_EX + "[ NODIFF ]" + colorama.Style.RESET_ALL
 				diffResult = "NODIFF"
+				#matchText = colorama.Back.LIGHTGREEN_EX + "[ NODIFF ]" + colorama.Style.RESET_ALL
+				matchText = "[ NODIFF ]"
 			else:
 				diffResult = "DIFF"
 				fileChangeCount += 1
@@ -187,9 +189,9 @@ def diffDir( newDir, oldDir ):
 			outBuf.append(s)
 			outBuf.append('<br />')
 		else:
-			matchText = colorama.Style.BRIGHT + colorama.Back.BLUE + "[ EXTRA  ]" + colorama.Back.RESET + colorama.Style.RESET_ALL
 			diffResult = "EXTRA"
-			print("{} Unexpected output file was generated: {}".format(matchText,os.path.basename(f)))
+			#matchText = colorama.Style.BRIGHT + colorama.Back.BLUE + "[ EXTRA  ]" + colorama.Back.RESET + colorama.Style.RESET_ALL
+			#print("{} Unexpected output file was generated: {}".format(matchText,os.path.basename(f)))
 
 		# HTML Footer
 		outBuf.extend(htmlFooter)
@@ -221,8 +223,8 @@ def diffDir( newDir, oldDir ):
 	extraFiles = nfSet - ofSet
 	missingFiles = ofSet - nfSet
 	for f in sorted(missingFiles):
-		matchText = colorama.Style.BRIGHT + colorama.Back.CYAN + "[ MISSING]" + colorama.Back.RESET + colorama.Style.RESET_ALL
-		print("{} Expected output file not generated: {}".format(matchText,f))
+		#matchText = colorama.Style.BRIGHT + colorama.Back.CYAN + "[ MISSING]" + colorama.Back.RESET + colorama.Style.RESET_ALL
+		#print("{} Expected output file not generated: {}".format(matchText,f))
 		indexHtml.append("<tr><td style='text-align:center;background:cyan;color:white;font: bold 1em sans-serif, serif;'>MISSING</td><td>{0}</td><td><a href='{1}/{0}.html'>diff results</a></td><td><a href='{2}/{0}'>output file</a></td><td><a href='{3}/{0}'>expected output file</a></td></tr>".format(fn,os.path.basename(HTML_PATH),os.path.basename(OUTPUT_PATH),os.path.basename(EXPECTED_PATH)))
 
 	# Index HTML Footer
@@ -256,7 +258,7 @@ def main():
 	testDirectoryPath = "~/pp/tools/repo/diffout/"
 	args = docopt(__doc__, version="diffout v{}".format(VERSION))
 
-	colorama.init()
+	#colorama.init()
 
 	# Configure logging
 	logLevel = logging.INFO #default
@@ -331,8 +333,8 @@ def main():
 			commandline = commandline.replace('%F',f)
 			terminalOutFile = open(os.path.join(TERMINAL_OUT_PATH,os.path.basename(f))+".out",'w')
 
-			matchText = colorama.Fore.LIGHTRED_EX + "[ DIFF ]" + colorama.Fore.RESET
-			s = colorama.Fore.LIGHTYELLOW_EX + "\n----- Running command:\n{}\n".format(commandline) + colorama.Fore.RESET
+			#s = colorama.Fore.LIGHTYELLOW_EX + "\n----- Running command:\n{}\n".format(commandline) + colorama.Fore.RESET
+			s = "\n----- Running command:\n{}\n".format(commandline)
 			print(s)
 			commandCount += 1
 
