@@ -4,7 +4,6 @@
 
 Usage:
   diffout [options] [--] <commandline> <infile>...
-  diffout -s | --save
   diffout -h | --help
   diffout --version
 
@@ -15,6 +14,7 @@ Examples:
 
 Options:
   -s, --save       Clear expected results, then save all test generated output as new expected results.
+  -p, --pipe       In addition to normal output files, diff terminal output as well
   -h, --help       Show help.
   -q, --quiet      Print less text.
   -v, --verbose    Print more text.
@@ -39,7 +39,7 @@ VERSION="0.1.0" # MAJOR.MINOR.PATCH | http://semver.org
 HTML_PATH         = os.path.join("diffout","diffs")
 EXPECTED_PATH     = os.path.join("diffout","expected")
 OUTPUT_PATH       = os.path.join("diffout","output")
-TERMINAL_OUT_PATH = os.path.join("diffout","terminal")
+TERMINAL_OUT_PATH = os.path.join("diffout","output")
 
 
 def fatal( errorMsg ):
@@ -154,13 +154,12 @@ def diffDir( newDir, oldDir ):
 	oldDir = expandPath(oldDir)
 	newFiles = getDirectoryFileList(newDir)
 	oldFiles = getDirectoryFileList(oldDir)
-	ofSet = set()
-	for f in oldFiles:
-		ofSet.add(os.path.basename(f))
-
 	nfSet = set()
 	for f in newFiles:
 		nfSet.add(os.path.basename(f))
+	ofSet = set()
+	for f in oldFiles:
+		ofSet.add(os.path.basename(f))
 
 	extraFiles = nfSet - ofSet
 	missingFiles = ofSet - nfSet
@@ -226,7 +225,7 @@ def diffDir( newDir, oldDir ):
 
 	# Write out index.html
 	parentDir = os.path.dirname(HTML_PATH)
-	p = os.path.join(parentDir,"index.html")
+	p = os.path.join(parentDir,"results.html")
 	htmlout = open(p, mode='w', encoding="utf-8")
 	htmlout.writelines(["%s\n" % item for item in indexHtml])
 	htmlout.close()
@@ -323,22 +322,24 @@ def main():
 		for f in glob.glob(infile):
 			commandline = args['<commandline>']
 			commandline = commandline.replace('%F',f)
-#			terminalOutPath = open(os.path.join(TERMINAL_OUT_PATH,os.path.basename(f)))
-
-#			print(terminalOutPath)
+			terminalOutFile = open(os.path.join(TERMINAL_OUT_PATH,os.path.basename(f))+".out",'w')
 
 			matchText = colorama.Fore.LIGHTRED_EX + "[ DIFF ]" + colorama.Fore.RESET
 			s = colorama.Fore.LIGHTYELLOW_EX + "\n----- Running command:\n{}\n".format(commandline) + colorama.Fore.RESET
 			print(s)
 			commandCount += 1
 
-			cl = shlex.split(commandline)
-			logging.debug("args: {}".format(str(cl)))
-			proc=subprocess.Popen(cl)
-			proc.wait()
-			if( proc.returncode != 0 ):
-				logging.error("Command failed: {}".format(commandline))
-				commandErrorCount += 1
+			with terminalOutFile as outFile:
+				cl = shlex.split(commandline)
+				logging.debug("args: {}".format(str(cl)))
+				if args['--pipe']:
+					proc=subprocess.Popen(cl, stdout=outFile, stderr=outFile)
+				else:
+					proc=subprocess.Popen(cl)
+				proc.wait()
+				if( proc.returncode != 0 ):
+					logging.error("Command failed: {}".format(commandline))
+					commandErrorCount += 1
 
 	# Copy recently modified files into output/
 	outFiles = getFilesModifiedAfterFile("STARTTIME")
