@@ -4,6 +4,7 @@
 
 Usage:
   diffout [options] [--] <commandline> <infile>...
+  diffout -s
   diffout -h | --help
   diffout --version
 
@@ -225,7 +226,7 @@ def diffDir( newDir, oldDir ):
 	for f in sorted(missingFiles):
 		#matchText = colorama.Style.BRIGHT + colorama.Back.CYAN + "[ MISSING]" + colorama.Back.RESET + colorama.Style.RESET_ALL
 		#print("{} Expected output file not generated: {}".format(matchText,f))
-		indexHtml.append("<tr><td style='text-align:center;background:cyan;color:white;font: bold 1em sans-serif, serif;'>MISSING</td><td>{0}</td><td><a href='{1}/{0}.html'>diff results</a></td><td><a href='{2}/{0}'>output file</a></td><td><a href='{3}/{0}'>expected output file</a></td></tr>".format(fn,os.path.basename(HTML_PATH),os.path.basename(OUTPUT_PATH),os.path.basename(EXPECTED_PATH)))
+		indexHtml.append("<tr><td style='text-align:center;background:cyan;color:white;font: bold 1em sans-serif, serif;'>MISSING</td><td>{0}</td><td><a href='{1}/{0}.html'>diff results</a></td><td><a href='{2}/{0}'>output file</a></td><td><a href='{3}/{0}'>expected output file</a></td></tr>".format(os.path.basename(f),os.path.basename(HTML_PATH),os.path.basename(OUTPUT_PATH),os.path.basename(EXPECTED_PATH)))
 
 	# Index HTML Footer
 	indexHtml.append("</table>")
@@ -334,7 +335,7 @@ def main():
 			terminalOutFile = open(os.path.join(TERMINAL_OUT_PATH,os.path.basename(f))+".out",'w')
 
 			#s = colorama.Fore.LIGHTYELLOW_EX + "\n----- Running command:\n{}\n".format(commandline) + colorama.Fore.RESET
-			s = "\n----- Running command:\n{}\n".format(commandline)
+			s = "\n----- Running command:\n{}".format(commandline)
 			print(s)
 			commandCount += 1
 
