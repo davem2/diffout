@@ -157,6 +157,9 @@ def diffDir( newDir, oldDir ):
 	indexHtml.extend(htmlHeader)
 	indexHtml.append("<table class='results'>")
 
+	#TODO add timestamp + command line headings
+	#TODO add table header
+
 	#for f in sorted(extraFiles):
 		#logging.info("Unexpected output file was generated: {}".format(f))
 
@@ -213,7 +216,7 @@ def diffDir( newDir, oldDir ):
 		elif diffResult == "EXTRA":
 			resultCell = "<td style='text-align:center;background:#55b;color:white;font: bold 1em sans-serif, serif;'>EXTRA</td>"
 
-		indexHtml.append("<tr>{4}<td>{0}</td><td><a href='{1}/{0}.html'>diff results</a></td><td><a href='{2}/{0}'>output file</a></td><td><a href='{3}/{0}'>expected output file</a></td></tr>".format(fn,os.path.basename(HTML_PATH),os.path.basename(OUTPUT_PATH),os.path.basename(EXPECTED_PATH),resultCell))
+		indexHtml.append("<tr>{4}<td>{0}</td><td><a href='{1}/{0}.html'>diff</a></td><td><a href='{2}/{0}'>output</a></td><td><a href='{3}/{0}'>expected</a></td></tr>".format(fn,os.path.basename(HTML_PATH),os.path.basename(OUTPUT_PATH),os.path.basename(EXPECTED_PATH),resultCell))
 
 	# Check for missing/unexpected files
 	nfSet = set()
@@ -228,7 +231,7 @@ def diffDir( newDir, oldDir ):
 	for f in sorted(missingFiles):
 		#matchText = colorama.Style.BRIGHT + colorama.Back.CYAN + "[ MISSING]" + colorama.Back.RESET + colorama.Style.RESET_ALL
 		#print("{} Expected output file not generated: {}".format(matchText,f))
-		indexHtml.append("<tr><td style='text-align:center;background:#aaa;color:white;font: bold 1em sans-serif, serif;'>MISSING</td><td>{0}</td><td><a href='{1}/{0}.html'>diff results</a></td><td><a href='{2}/{0}'>output file</a></td><td><a href='{3}/{0}'>expected output file</a></td></tr>".format(os.path.basename(f),os.path.basename(HTML_PATH),os.path.basename(OUTPUT_PATH),os.path.basename(EXPECTED_PATH)))
+		indexHtml.append("<tr><td style='text-align:center;background:#aaa;color:white;font: bold 1em sans-serif, serif;'>MISSING</td><td>{0}</td><td><a href='{1}/{0}.html'>diff</a></td><td><a href='{2}/{0}'>output</a></td><td><a href='{3}/{0}'>expected</a></td></tr>".format(os.path.basename(f),os.path.basename(HTML_PATH),os.path.basename(OUTPUT_PATH),os.path.basename(EXPECTED_PATH)))
 
 	# Index HTML Footer
 	indexHtml.append("</table>")
@@ -249,7 +252,9 @@ def diffDir( newDir, oldDir ):
 	if len(missingFiles) > 0:
 		print("{} expected output files were not generated.".format(len(missingFiles)))
 	if fileChangeCount > 0:
-		print("{} output file(s) differ with expected output, view diffout/results.html for diff results".format(fileChangeCount))
+		parentDir = expandPath(os.path.dirname(HTML_PATH))
+		p = os.path.join(parentDir,"results.html")
+		print("{} output file(s) differ with expected output, view file://{} for diff results".format(fileChangeCount,p))
 	else:
 		print("No differences with expected output found.")
 	print()
@@ -259,7 +264,7 @@ def diffDir( newDir, oldDir ):
 
 def main():
 	testDirectoryPath = "~/pp/tools/repo/diffout/"
-	args = docopt(__doc__, version="diffout v{}".format(VERSION))
+	args = docopt(__doc__, version="diffout v{}".format(__version__))
 
 	#colorama.init()
 
@@ -304,7 +309,6 @@ def main():
 		shutil.rmtree(p)
 		os.makedirs(p)
 
-
 	# Delete diff from previous run
 	p = expandPath(HTML_PATH)
 	if os.path.exists(p):
@@ -333,7 +337,7 @@ def main():
 	for infile in args['<infile>']:
 		for f in glob.glob(infile):
 			commandline = args['<commandline>']
-			commandline = commandline.replace('%F',f)
+			commandline = commandline.replace('%f',f)
 			terminalOutFile = open(os.path.join(TERMINAL_OUT_PATH,os.path.basename(f))+".out",'w')
 
 			#s = colorama.Fore.LIGHTYELLOW_EX + "\n----- Running command:\n{}\n".format(commandline) + colorama.Fore.RESET
@@ -380,7 +384,7 @@ htmlHeader = ('<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "h
 			  '     .diff_add {background-color:#aaffaa}',
 			  '     .diff_chg {background-color:#ffff77}',
 			  '     .diff_sub {background-color:#ffaaaa}',
-			  '		table.results {margin:3em auto; width:auto;background:#eee;border-spacing:0.3em;border:thin solid #ccc}',
+			  '		table.results {margin:3em auto; width:auto;background:#ffe;border-spacing:0.3em;border:thin solid #ccc}',
 			  '		.results td {text-align: left; padding: 0.3em 0.6em; border: none;}',
 			  ' </style>',
 			  '</head>',
@@ -406,7 +410,6 @@ htmlFooter = ('    <table class="diff" summary="Legends">',
              '</body>',
              '',
              '</html>')
-
 
 
 if __name__ == "__main__":
