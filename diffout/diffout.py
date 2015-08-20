@@ -34,8 +34,10 @@ import subprocess
 import time
 #import colorama
 
-
-VERSION="0.1.0" # MAJOR.MINOR.PATCH | http://semver.org
+__appname__ = "diffout"
+__author__  = "David Maranhao"
+__license__ = "MIT"
+__version__ = "0.1.0" # MAJOR.MINOR.PATCH | http://semver.org
 
 HTML_PATH         = os.path.join("diffout","diffs")
 EXPECTED_PATH     = os.path.join("diffout","expected")
