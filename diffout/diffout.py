@@ -263,7 +263,6 @@ def diffDir(newDir, oldDir):
 
 
 def main():
-	testDirectoryPath = "~/pp/tools/repo/diffout/"
 	args = docopt(__doc__, version="diffout v{}".format(__version__))
 
 	#colorama.init()
