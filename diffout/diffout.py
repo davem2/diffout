@@ -45,7 +45,7 @@ OUTPUT_PATH       = os.path.join("diffout","output")
 TERMINAL_OUT_PATH = os.path.join("diffout","output")
 
 
-def fatal( errorMsg ):
+def fatal(errorMsg):
 	logging.critical(errorMsg)
 	exit(1)
 	return
@@ -91,7 +91,7 @@ def loadFile(fn):
 	return inBuf;
 
 
-def expandPath( path ):
+def expandPath(path):
 	path = os.path.abspath(path)
 	path = os.path.expanduser(path)
 	path = os.path.expandvars(path)
@@ -100,7 +100,7 @@ def expandPath( path ):
 	return path
 
 
-def getFilesModifiedAfterFile( path ):
+def getFilesModifiedAfterFile(path):
 
 	path = expandPath(path)
 	startTime = os.path.getmtime(path)
@@ -117,7 +117,7 @@ def getFilesModifiedAfterFile( path ):
 	return modifiedFiles
 
 
-def getDirectoryFileList( path ):
+def getDirectoryFileList(path):
 	path = expandPath(path)
 	if not os.path.isdir(path):
 		logging.error("{} is not a directory".format(path))
@@ -127,7 +127,7 @@ def getDirectoryFileList( path ):
 	return glob.glob(searchPath)
 
 
-def saveFiles( fileList, destDir ):
+def saveFiles(fileList, destDir):
 	destDir = expandPath(destDir)
 	for f in fileList:
 		f = expandPath(f)
@@ -141,7 +141,7 @@ def saveFiles( fileList, destDir ):
 		shutil.copy(srcFile,dstFile)
 
 
-def diffDir( newDir, oldDir ):
+def diffDir(newDir, oldDir):
 	logging.info("--- Comparing new outputs with expected outputs:")
 
 	newDir = expandPath(newDir)
@@ -353,7 +353,7 @@ def main():
 				else:
 					proc=subprocess.Popen(cl)
 				proc.wait()
-				if( proc.returncode != 0 ):
+				if(proc.returncode != 0):
 					logging.error("Command failed: {}".format(commandline))
 					commandErrorCount += 1
 
