@@ -247,9 +247,9 @@ def diffDir(newDir, oldDir):
 
 	# Finished, summarize results
 	print()
-	if len(extraFiles) > 0:
+	if extraFiles:
 		print("{} unexpected output files were generated.".format(len(extraFiles)))
-	if len(missingFiles) > 0:
+	if missingFiles:
 		print("{} expected output files were not generated.".format(len(missingFiles)))
 	if fileChangeCount > 0:
 		parentDir = expandPath(os.path.dirname(HTML_PATH))
