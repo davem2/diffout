@@ -205,7 +205,7 @@ def diffDir(newDir, oldDir):
 		# Write out results
 		p = os.path.join(HTML_PATH,"{}.html".format(fn))
 		htmlout = open(p, mode='w', encoding="utf-8")
-		htmlout.writelines(["%s\n" % item for item in outBuf])
+		htmlout.writelines(["{}\n".format(item) for item in outBuf])
 		htmlout.close()
 
 		# Add to index
@@ -219,12 +219,8 @@ def diffDir(newDir, oldDir):
 		indexHtml.append("<tr>{4}<td>{0}</td><td><a href='{1}/{0}.html'>diff</a></td><td><a href='{2}/{0}'>output</a></td><td><a href='{3}/{0}'>expected</a></td></tr>".format(fn,os.path.basename(HTML_PATH),os.path.basename(OUTPUT_PATH),os.path.basename(EXPECTED_PATH),resultCell))
 
 	# Check for missing/unexpected files
-	nfSet = set()
-	for f in newFiles:
-		nfSet.add(os.path.basename(f))
-	ofSet = set()
-	for f in oldFiles:
-		ofSet.add(os.path.basename(f))
+	nfSet = set([os.path.basename(f) for f in newFiles])
+	ofSet = set([os.path.basename(f) for f in oldFiles])
 
 	extraFiles = nfSet - ofSet
 	missingFiles = ofSet - nfSet
@@ -242,7 +238,7 @@ def diffDir(newDir, oldDir):
 	parentDir = os.path.dirname(HTML_PATH)
 	p = os.path.join(parentDir,"results.html")
 	htmlout = open(p, mode='w', encoding="utf-8")
-	htmlout.writelines(["%s\n" % item for item in indexHtml])
+	htmlout.writelines(["{}\n".format(item) for item in indexHtml])
 	htmlout.close()
 
 	# Finished, summarize results
